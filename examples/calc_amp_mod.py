@@ -8,18 +8,15 @@ from __future__ import print_function, division
 
 import numpy as np
 import brian as br
+import matplotlib.pyplot as plt
 from brian.units import second
-
-
-from  mso_model.mso_connect import inhibitory_to_mso, excitatory_to_mso, cochlea_to_gbc
-
-from mso_model.mso import make_mso_group
-
-from mso_model.helper import run
 import cochlea as coch
 import thorns
-import mso_model.audiotools as audio
 
+from  mso_model.mso_connect import inhibitory_to_mso, excitatory_to_mso, cochlea_to_gbc
+from mso_model.mso import make_mso_group
+from mso_model.helper import run
+import mso_model.audiotools as audio
 
 def run_exp(c_freq, sound_freq , itd, level=50, i=0):
     br.globalprefs.set_global_preferences(useweave=True, openmp=True, usecodegen=True,
@@ -143,4 +140,10 @@ if __name__ == '__main__':
     spikes_left = trim(res['spikes_left'])
     spikes_right = trim(res['spikes_right'])
 
-    thorns.psth(spikes_left, 30e-3)
+    psth_l, bins = thorns.psth(spikes_left, 30e-3)
+    psth_r, bins = thorns.psth(spikes_right, 30e-3)
+
+    fig, ax = plt.subplots(1, 1)
+    ax.plot(bins[:-1], psth_r - psth_l)
+    ax.set_xlabel('time / s')
+    ax.set_ylabel('$\Delta R$ / sps')

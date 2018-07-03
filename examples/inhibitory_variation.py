@@ -1,22 +1,30 @@
+'''Calculates the results of the inhibitory variation script
+
+To plot the results run the inhibitory_variation_plot script
+afterwards
+
+'''
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function, division
 
-__author__ = "Jörg Encke"
-
 import numpy as np
 import brian as br
 from brian.units import second
 import matplotlib.pyplot as plt
-import cmath
-from auditory_brain import *
-from auditory_brain.connections import mso as connect
 import cochlea as coch
-from thorns import waves as wv
-import auditory_brain as ab
-import pandas
 import thorns
+
+from  mso_model.mso_connect import inhibitory_to_mso, excitatory_to_mso, cochlea_to_gbc
+from mso_model.mso import make_mso_group
+from mso_model.helper import run
+import mso_model.audiotools as audio
+
+
+
+import pandas
 import audiotools as audio
 
 def run_exp(c_freq, itd, str_e, str_i):
@@ -38,22 +46,11 @@ def run_exp(c_freq, itd, str_e, str_i):
     n_itd = int(itd/dt_coch)
     const_dt = 100e-6
 
-    # Create the input Sound
-    # duration = duration + 2 * pad
-    # sound = thorns.waves.ramped_tone(fs_coch, c_freq, duration, ramp=20E-3)
-    # sound = coch.set_dbspl(sound, dbspl)
-    # sound = np.concatenate((np.zeros(n_pad), sound, np.zeros(n_pad)))
-    # sound_c = np.roll(sound, n_itd)
-    # sound = np.column_stack([sound, sound_c])
-    # sound_t = thorns.waves.t(sound,fs_coch)
-
-
     sound = audio.audiotools.generate_tone(c_freq, duration, fs_coch)
     sound = sound * audio.audiotools.cosine_fade_window(sound, 20e-3, fs_coch)
     sound = coch.set_dbspl(sound, dbspl)
     sound = np.concatenate((np.zeros(n_pad), sound, np.zeros(n_pad)))
     sound = audio.audiotools.delay_signal(sound, np.abs(itd), fs_coch)
-
 
     if itd < 0:
         sound = sound[:, ::-1]
@@ -80,43 +77,41 @@ def run_exp(c_freq, itd, str_e, str_i):
 
 
     # Setup a new mso group and new gbc groups
-    mso_group_left = ab.make_mso_new_group(n_neuron)
-    mso_group_right = ab.make_mso_new_group(n_neuron)
+    mso_group_left = make_mso_group(n_neuron)
+    mso_group_right = make_mso_group(n_neuron)
 
-    gbc_group_left = ab.connections.mso_new.cochlea_to_gbc(anf_group_left, n_neuron)
-    gbc_group_right = ab.connections.mso_new.cochlea_to_gbc(anf_group_right, n_neuron)
+    gbc_group_left = cochlea_to_gbc(anf_group_left, n_neuron)
+    gbc_group_right = cochlea_to_gbc(anf_group_right, n_neuron)
 
     # Synaptic connections for the groups
-    syn_mso_l_in_ipsi, syn_mso_l_in_contra = ab.connections.mso_new.inhibitory_to_mso(mso_group=mso_group_left,
-                                                                   ipsi_group=gbc_group_left['neuron_groups'][0],
-                                                                   contra_group=gbc_group_right['neuron_groups'][0],
-                                                                   strength=str_i,
-                                                                   ipsi_delay=0,
-                                                                   contra_delay=-0.6e-3 + const_dt)
+    syn_mso_l_in_ipsi, syn_mso_l_in_contra = inhibitory_to_mso(mso_group=mso_group_left,
+                                                               ipsi_group=gbc_group_left['neuron_groups'][0],
+                                                               contra_group=gbc_group_right['neuron_groups'][0],
+                                                               strength=str_i,
+                                                               ipsi_delay=0,
+                                                               contra_delay=-0.6e-3 + const_dt)
 
-    syn_mso_r_in_ipsi, syn_mso_r_in_contra = ab.connections.mso_new.inhibitory_to_mso(mso_group=mso_group_right,
-                                                                   ipsi_group=gbc_group_right['neuron_groups'][0],
-                                                                   contra_group=gbc_group_left['neuron_groups'][0],
-                                                                   strength=str_i,
-                                                                   ipsi_delay=0,
-                                                                   contra_delay=-0.6e-3 + const_dt)
+    syn_mso_r_in_ipsi, syn_mso_r_in_contra = inhibitory_to_mso(mso_group=mso_group_right,
+                                                               ipsi_group=gbc_group_right['neuron_groups'][0],
+                                                               contra_group=gbc_group_left['neuron_groups'][0],
+                                                               strength=str_i,
+                                                               ipsi_delay=0,
+                                                               contra_delay=-0.6e-3 + const_dt)
 
 
-    syn_mso_l_ex_ipsi, syn_mso_l_ex_contra  = ab.connections.mso_new.excitatory_to_mso(mso_group=mso_group_left,
-                                                                                   ipsi_group=anf_group_left,
-                                                                                   contra_group=anf_group_right,
-                                                                                       strength=str_e,
-                                                                                       contra_delay=const_dt)
+    syn_mso_l_ex_ipsi, syn_mso_l_ex_contra  = excitatory_to_mso(mso_group=mso_group_left,
+                                                                ipsi_group=anf_group_left,
+                                                                contra_group=anf_group_right,
+                                                                strength=str_e,
+                                                                contra_delay=const_dt)
 
-    syn_mso_r_ex_ipsi, syn_mso_r_ex_contra  = ab.connections.mso_new.excitatory_to_mso(mso_group=mso_group_right,
-                                                                                   ipsi_group=anf_group_right,
-                                                                                   contra_group=anf_group_left,
-                                                                                       strength=str_e,
-                                                                                       contra_delay=const_dt)
+    syn_mso_r_ex_ipsi, syn_mso_r_ex_contra  = excitatory_to_mso(mso_group=mso_group_right,
+                                                                ipsi_group=anf_group_right,
+                                                                contra_group=anf_group_left,
+                                                                strength=str_e,
+                                                                contra_delay=const_dt)
 
-    # ex_syn_i_mon = br.StateMonitor(mso_group_left, 'ex_syn_i', record=True)
-    # ex_syn_c_mon = br.StateMonitor(mso_group_left, 'ex_syn_c', record=True)
-    # vu_mon = br.StateMonitor(mso_group_left, 'vu', record=True)
+
     sp_mon_left = br.SpikeMonitor(mso_group_left, record=True)
     sp_mon_right = br.SpikeMonitor(mso_group_right, record=True)
 
@@ -137,7 +132,7 @@ def run_exp(c_freq, itd, str_e, str_i):
                + gbc_group_left['neuron_groups']
                + gbc_group_right['neuron_groups'])
 
-    ab.run(duration , network)
+    run(duration , network)
 
     mso_train_left = thorns.make_trains(sp_mon_left)
     mso_train_right = thorns.make_trains(sp_mon_right)
@@ -150,8 +145,7 @@ if __name__ == '__main__':
     params = {'c_freq':[125],
               'itd': np.linspace(-1e-3, 1e-3, 15),
               'str_e':[20e-9],
-              'str_i':np.linspace(0e-9, 20e-9, 5)}#, 10e-9, 20e-9]}
+              'str_i':np.linspace(0e-9, 20e-9, 5)}
 
-    res = thorns.util.map(run_exp, params, backend='ipython', cache='no')
-
-    thorns.util.dumpdb(res, '01_inhibitory_shift')
+    res = thorns.util.map(run_exp, params, backend='m', cache='no')
+    thorns.util.dumpdb(res, 'inhibitory_variation')

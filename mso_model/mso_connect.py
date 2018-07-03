@@ -1,6 +1,7 @@
-# -*- coding: utf-8 -*-
+from __future__ import print_function, division, absolute_import
+
 '''
-Copyright (C) 2014-2018  Jörg Encke
+Copyright (C) 2014-2018  Joerg Encke
 This file is part of mso_model.
 
 mso_model is free software: you can redistribute it and/or modify
@@ -17,10 +18,6 @@ You should have received a copy of the GNU General Public License
 along with mso_model.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from __future__ import print_function, division, absolute_import
-
-__author__ = "Jörg Encke"
-
 import brian as br
 from brian.units import siemens, second
 from brian import ms
@@ -31,9 +28,28 @@ import random
 
 import warnings
 
-import auditory_brain as audit
+from mso_model.gbc import make_gbc_group
+
 import cochlea as coch
 
+def make_anf_group(anf_trains):
+
+    times = []
+    indices = []
+    for i,spikes in enumerate(anf_trains['spikes']):
+        times.append( spikes )
+        indices.append( np.ones(len(spikes)) * i )
+
+
+    indices = np.concatenate( indices )
+    times = np.concatenate( times ) * second
+
+    group = brian.SpikeGeneratorGroup(
+        len(anf_trains),
+        spiketimes=(indices, times)
+    )
+
+    return group
 
 def binaural_cochlea(sound, fs, c_freq, anf_num=(100, 0, 0), seed=None):
     """ Run two cochlea models where the sound is thee same apart from a
@@ -83,8 +99,8 @@ def binaural_cochlea(sound, fs, c_freq, anf_num=(100, 0, 0), seed=None):
                                 species='human')
 
     # Create neuron groups.
-    anf_group_c = audit.make_anf_group(anf_c)
-    anf_group_i = audit.make_anf_group(anf_i)
+    anf_group_c = make_anf_group(anf_c)
+    anf_group_i = make_anf_group(anf_i)
 
     return {"spikes": [anf_i, anf_c],
             "neuron_groups": [anf_group_i, anf_group_c]}
@@ -92,8 +108,7 @@ def binaural_cochlea(sound, fs, c_freq, anf_num=(100, 0, 0), seed=None):
 
 def cochlea_to_gbc(anf_group, n_gbc):
 
-    warnings.warn('please use the function provided by the gbc subpackge')
-    gbc_group = audit.make_gbc_group(n_gbc)
+    gbc_group = make_gbc_group(n_gbc)
 
     p_connect = 40 / n_gbc
     synapses_i = br.Connection(anf_group, gbc_group, 'ge_syn')
@@ -319,13 +334,3 @@ def connect_random(source_group, target_group,  synapse):
         for j in range(num_e):
             c = random.choice(s_list)
             synapse[c, i] = True
-
-
-__literature__ = """
-[Couchman2010] Couchman, K., Grothe, B., & Felmy, F. (2010). Medial superior
-olivary neurons receive surprisingly few excitatory and inhibitory
-inputs with balanced strength and short-term dynamics. The Journal of
-Neuroscience : The Official Journal of the Society for Neuroscience,
-30(50), 17111–21. doi:10.1523/JNEUROSCI.1760-10.2010
-
-"""
