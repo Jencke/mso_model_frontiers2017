@@ -1,21 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+'''Simple Example that runs the MSO model for 400Hz with a 400 Hz
+tone amplitude modulated at 2Hz and plots the firing rate difference.
+'''
 
 from __future__ import print_function, division
-
-__author__ = "Jörg Encke"
 
 import numpy as np
 import brian as br
 from brian.units import second
 
-from mso_connect import inhibitory_to_mso, excitatory_to_mso, cochlea_to_gbc
-from mso import make_mso_group
 
-from helper import run
+from  mso_model.mso_connect import inhibitory_to_mso, excitatory_to_mso, cochlea_to_gbc
+
+from mso_model.mso import make_mso_group
+
+from mso_model.helper import run
 import cochlea as coch
 import thorns
-import audiotools as audio
+import mso_model.audiotools as audio
 
 
 def run_exp(c_freq, sound_freq , itd, level=50, i=0):
@@ -34,14 +37,14 @@ def run_exp(c_freq, sound_freq , itd, level=50, i=0):
     n_itd = int(itd/dt_coch)
     const_dt = 100e-6
 
-    sound = audio.audiotools.generate_tone(sound_freq, duration, fs_coch)
+    sound = audio.generate_tone(sound_freq, duration, fs_coch)
     mod = audio.cos_amp_modulator(sound, 2, fs_coch)
     sound *= mod
     sound = coch.set_dbspl(sound, 50)
-    sound = sound * audio.audiotools.cosine_fade_window(sound, 20e-3, fs_coch)
+    sound = sound * audio.cosine_fade_window(sound, 20e-3, fs_coch)
     sound = np.concatenate((np.zeros(n_pad), sound, np.zeros(n_pad)))
 
-    sound = audio.audiotools.delay_signal(sound, np.abs(itd), fs_coch)
+    sound = audio.delay_signal(sound, np.abs(itd), fs_coch)
 
     duration = len(sound) / fs_coch
 
@@ -134,9 +137,10 @@ def run_exp(c_freq, sound_freq , itd, level=50, i=0):
             'n_itd':n_itd}
 
 if __name__ == '__main__':
-    params ={'itd':[200e-6],
-             'sound_freq':[400],
-             'c_freq':np.logspace(np.log10(125), 3, 1),
-             'level':[40]}
+    res = run_exp(c_freq=400, sound_freq=400, itd=200e-6)
 
-    res = run_exp(125, 125, 200e-6)
+    trim = lambda x: thorns.trim(x, start=0.125, stop=2.125)
+    spikes_left = trim(res['spikes_left'])
+    spikes_right = trim(res['spikes_right'])
+
+    thorns.psth(spikes_left, 30e-3)

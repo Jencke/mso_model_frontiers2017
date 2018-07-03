@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 Copyright (C) 2014-2018  Jörg Encke
 This file is part of mso_model.

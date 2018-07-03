@@ -211,3 +211,53 @@ def pad_for_fft(signal):
     out_signal = np.zeros(int(n_out))
     out_signal[:len(signal)] = signal
     return out_signal
+
+def get_time(signal, fs):
+    '''Time axis of a given signal.
+
+    This function generates a time axis for a given signal at a given
+    sample rate.
+
+    Parameters:
+    -----------
+    signal : ndarray
+        The input signal for which to generate the time axis
+    fs : scalar
+        The sampling rate in Hz
+
+    Returns:
+    --------
+    ndarray : The time axis in seconds
+
+    '''
+    dt = 1. / fs
+    max_time = len(signal) * dt
+    time = np.arange(0, max_time , dt)
+
+    # Sometimes, due to numerics arange creates an extra sample which
+    # needs to be removed
+    if len(time) == len(signal) + 1:
+        time = time[:-1]
+    return time
+
+def zero_buffer(signal, number):
+    '''Add a number of zeros to both sides of a signal
+
+    Parameters:
+    -----------
+    signal: ndarray
+        The input Signal
+    number : int
+        The number of zeros that should be added
+
+    Returns:
+    --------
+    ndarray : The bufferd signal
+
+    '''
+    assert isinstance(number, int)
+
+    buf = np.zeros(number)
+    signal = np.concatenate([buf, signal, buf])
+
+    return signal
