@@ -25,11 +25,11 @@ import mso_model.audiotools as audio
 
 
 import pandas
-import audiotools as audio
+# import audiotools as audio
 
 def run_exp(c_freq, itd, str_e, str_i):
-    br.globalprefs.set_global_preferences(useweave=True, openmp=True, usecodegen=True,
-                                          usecodegenweave=True )
+    # br.globalprefs.set_global_preferences(useweave=True, openmp=True, usecodegen=True,
+    #                                       usecodegenweave=True )
 
 
     br.defaultclock.dt = 20E-6 * second
@@ -46,11 +46,11 @@ def run_exp(c_freq, itd, str_e, str_i):
     n_itd = int(itd/dt_coch)
     const_dt = 100e-6
 
-    sound = audio.audiotools.generate_tone(c_freq, duration, fs_coch)
-    sound = sound * audio.audiotools.cosine_fade_window(sound, 20e-3, fs_coch)
+    sound = audio.generate_tone(c_freq, duration, fs_coch)
+    sound = sound * audio.cosine_fade_window(sound, 20e-3, fs_coch)
     sound = coch.set_dbspl(sound, dbspl)
     sound = np.concatenate((np.zeros(n_pad), sound, np.zeros(n_pad)))
-    sound = audio.audiotools.delay_signal(sound, np.abs(itd), fs_coch)
+    sound = audio.delay_signal(sound, np.abs(itd), fs_coch)
 
     if itd < 0:
         sound = sound[:, ::-1]

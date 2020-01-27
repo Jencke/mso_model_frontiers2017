@@ -19,8 +19,8 @@ from mso_model.helper import run
 import mso_model.audiotools as audio
 
 def run_exp(c_freq, sound_freq , itd, level=50, i=0):
-    br.globalprefs.set_global_preferences(useweave=True, openmp=True, usecodegen=True,
-                                          usecodegenweave=True )
+    # br.globalprefs.set_global_preferences(useweave=True, openmp=True, usecodegen=True,
+    #                                       usecodegenweave=True )
 
     br.defaultclock.dt = 20E-6 * second
 
